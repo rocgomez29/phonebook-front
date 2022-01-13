@@ -111,193 +111,170 @@
 
 <script>
 export default {
-    data() {
-      return {
-        name: '',
-        nameState: null,
-        mobile_phone: '',
-        mobilePhoneState: null,
-        home_phone: '',
-        homePhoneState: null,
-        work_phone: null,
-        workPhoneState: null,
-        email: null,
-        emailState: null,
-        options: [
-            { value: null, text: 'Seleccione una opcion' },
-        ],
-        
-        editid: '',
-        editname: '',
-        editnameState: null,
-        editmobile_phone: '',
-        editmobilePhoneState: null,
-        edithome_phone: '',
-        edithomePhoneState: null,
-        editwork_phone: null,
-        editworkPhoneState: null,
-        editemail: null,
-        editemailState: null,
-        editoptions: [
-            { value: null, text: 'Seleccione una opcion' },
-        ],
-
-        fields: [
-            { key: 'name', label: 'Nombre' },
-            { key: 'mobile_phone', label: 'Móvil' },
-            { key: 'home_phone', label: 'Teléfono de casa' },
-            { key: 'work_phone', label: 'Teléfono de trabajo' },
-            { key: 'email', label: 'Correo electrónico' },
-            { key: 'actions', label: 'Acciones' },
-        ],
-        items: [],
-        
-        infoModal: {
-            id: 'info-modal',
-            title: '',
-            content: ''
-        }
+  data () {
+    return {
+      name: '',
+      nameState: null,
+      mobile_phone: '',
+      mobilePhoneState: null,
+      home_phone: '',
+      homePhoneState: null,
+      work_phone: null,
+      workPhoneState: null,
+      email: null,
+      emailState: null,
+      editid: '',
+      editname: '',
+      editnameState: null,
+      editmobile_phone: '',
+      editmobilePhoneState: null,
+      edithome_phone: '',
+      edithomePhoneState: null,
+      editwork_phone: null,
+      editworkPhoneState: null,
+      editemail: null,
+      editemailState: null,
+      fields: [
+        { key: 'name', label: 'Nombre' },
+        { key: 'mobile_phone', label: 'Móvil' },
+        { key: 'home_phone', label: 'Teléfono de casa' },
+        { key: 'work_phone', label: 'Teléfono de trabajo' },
+        { key: 'email', label: 'Correo electrónico' },
+        { key: 'actions', label: 'Acciones' }
+      ],
+      items: [],
+      infoModal: {
+        id: 'info-modal',
+        title: '',
+        content: ''
+      }
+    }
+  },
+  created () {
+    this.init()
+  },
+  methods: {
+    init () {
+      this.axios.get('http://127.0.0.1:8000/api/contacts').then(response => {
+        this.items = response.data
+      })
+    },
+    checkFormValidity () {
+      if (this.$refs.type_form.value === 'true') {
+        const valid = this.$refs.formEdit.checkValidity()
+        this.editnameState = (this.editname !== '')
+        this.editmobilePhoneState = (this.editmobile_phone !== '')
+        this.edithomePhoneState = (this.edithome_phone !== '')
+        this.editworkPhoneState = (this.editwork_phone !== '')
+        this.editemailState = (this.editemail !== '')
+        return valid
+      } else {
+        const valid = this.$refs.form.checkValidity()
+        this.nameState = (this.name !== '')
+        this.mobilePhoneState = (this.mobile_phone !== '')
+        this.homePhoneState = (this.home_phone !== '')
+        this.workPhoneState = (this.work_phone !== '')
+        this.emailState = (this.email !== '')
+        return valid
       }
     },
-    created() {
-        this.init()
+    resetModal () {
+      this.name = ''
+      this.nameState = null
+      this.mobile_phone = ''
+      this.mobilePhoneState = null
+      this.home_phone = ''
+      this.homePhoneState = null
+      this.work_phone = ''
+      this.workPhoneState = null
+      this.email = ''
+      this.emailState = null
+
+      this.editid = ''
+      this.editname = ''
+      this.editnameState = null
+      this.editmobile_phone = ''
+      this.editmobilePhoneState = null
+      this.editahome_phone = ''
+      this.edithomePhoneState = null
+      this.editawork_phone = ''
+      this.editworkPhoneState = null
+      this.editemail = ''
+      this.editemailState = null
     },
-    methods: {
-        init(){
+    handleOk (bvModalEvt) {
+      // Prevent modal from closing
+      bvModalEvt.preventDefault()
+      // Trigger submit handler
+      this.handleSubmit()
+    },
+    handleSubmit () {
+      // Exit when the form isn't valid
+      if (!this.checkFormValidity()) {
+        return
+      }
+      if (this.$refs.type_form.value === 'true') {
+        let editItem = {
+          id: this.editid,
+          name: this.editname,
+          mobile_phone: this.editmobile_phone,
+          home_phone: this.edithome_phone,
+          work_phone: this.editwork_phone,
+          email: this.editemail
+        }
+
         this.axios
-            .get('http://localhost:8000/api/contacts')
+          .put('http://127.0.0.1:8000/api/contact/edit/' + this.editid, editItem)
+          .then(response => {
+            this.$set(this.items, this.infoModal.content.index, response.data.contact)
+          })
+
+        // Hide the modal manually
+        this.$nextTick(() => {
+          this.$root.$emit('bv::hide::modal', this.infoModal.id)
+        })
+      } else {
+        let newItem = {
+          name: this.name,
+          mobile_phone: this.mobile_phone,
+          home_phone: this.home_phone,
+          work_phone: this.work_phone,
+          email: this.email
+        }
+        this.axios
+          .post('http://127.0.0.1:8000/api/contact/store', newItem)
+          .then(response => {
+            this.items.splice(0, 0, response.data.contact)
+          })
+
+        this.$nextTick(() => {
+          this.$bvModal.hide('modal-prevent-closing')
+        })
+      }
+    },
+    handleEdit (row) {
+      this.infoModal.title = `Contacto: ${row.item.name} ${row.item.mobile_phone}`
+      this.infoModal.content = row
+      this.editid = row.item.id
+      this.editname = row.item.name
+      this.editmobile_phone = row.item.mobile_phone
+      this.edithome_phone = row.item.home_phone
+      this.editwork_phone = row.item.work_phone
+      this.editemail = row.item.email
+      this.$root.$emit('bv::show::modal', this.infoModal.id)
+    },
+    handleDelete (row) {
+      this.$bvModal.msgBoxConfirm('Desea eliminar este contacto?').then(value => {
+        if (value === true) {
+          this.axios.delete('http://127.0.0.1:8000/api/contact/delete/' + row.item.id)
             .then(response => {
-                console.log(response)
-                this.items = response.data;
-            });
-        },
-        checkFormValidity() {
-            if (this.$refs.type_form.value == 'true') {
-                const valid = this.$refs.formEdit.checkValidity()
-                this.editnameState = (this.editname != '')
-                this.editmobilePhoneState = (this.editmobile_phone != '')
-                this.edithomePhoneState = (this.edithome_phone != '')
-                this.editworkPhoneState = (this.editwork_phone != '')
-                this.editemailState = (this.editemail != '')
-                return valid
-            } else {
-                const valid = this.$refs.form.checkValidity()
-                this.nameState = (this.name != '')
-                this.mobilePhoneState = (this.mobile_phone != '')
-                this.homePhoneState = (this.home_phone != '')
-                this.workPhoneState = (this.work_phone != '')
-                this.emailState = (this.email != '')
-                return valid
-            }
-        },
-        resetModal() {
-            this.name = ''
-            this.nameState = null
-            this.mobile_phone = ''
-            this.mobilePhoneState = null
-            this.home_phone = ''
-            this.homePhoneState = null
-            this.work_phone = ''
-            this.workPhoneState = null
-            this.email = ''
-            this.emailState = null
-
-            this.editid = ''
-            this.editname = ''
-            this.editnameState = null
-            this.editmobile_phone = ''
-            this.editmobilePhoneState = null
-            this.editahome_phone = ''
-            this.edithomePhoneState = null
-            this.editawork_phone = ''
-            this.editworkPhoneState = null
-            this.editemail = ''
-            this.editemailState = null
-        },
-        handleOk(bvModalEvt) {
-            // Prevent modal from closing
-            bvModalEvt.preventDefault()
-            // Trigger submit handler
-            this.handleSubmit()
-        },
-        handleSubmit() {
-            // Exit when the form isn't valid
-            if (!this.checkFormValidity()) {
-                return
-            }
-            if (this.$refs.type_form.value == 'true') {
-                let editItem = {
-                    id: this.editid,
-                    name: this.editname,
-                    mobile_phone: this.editmobile_phone,
-                    home_phone: this.edithome_phone,
-                    home_phone: this.edithome_phone,
-                    work_phone: this.editwork_phone,
-                    email: this.editemail
-                };
-
-                this.axios
-                .put('http://localhost:8000/api/contact/edit/'+this.editid, editItem)
-                .then(response => {
-                    this.$set(this.items, this.infoModal.content.index, response.data.contact)
-                });
-
-
-
-
-                // Hide the modal manually
-                this.$nextTick(() => {
-                    // this.$bvModal.hide('modal-edit')
-                    this.$root.$emit('bv::hide::modal', this.infoModal.id)
-                })
-            
-            } else {
-                let newItem = {
-                    name: this.name,
-                    mobile_phone: this.mobile_phone,
-                    home_phone: this.home_phone,
-                    work_phone: this.work_phone,
-                    email: this.email,
-                };
-                this.axios
-                .post('http://localhost:8000/api/contact/store', newItem)
-                .then(response => {
-                    this.items.splice(0,0,response.data.contact);
-                });
-
-                // Hide the modal manually
-                this.$nextTick(() => {
-                    this.$bvModal.hide('modal-prevent-closing')
-                })
-            }
-
-        },
-        handleEdit(row) {
-            this.infoModal.title = `Contacto: ${row.item.name} ${row.item.mobile_phone}`
-            this.infoModal.content = row
-            this.editid = row.item.id
-            this.editname = row.item.name
-            this.editmobile_phone = row.item.mobile_phone
-            this.edithome_phone = row.item.home_phone
-            this.editwork_phone = row.item.work_phone
-            this.editemail = row.item.email
-            this.$root.$emit('bv::show::modal', this.infoModal.id)
-        },
-        handleDelete(row) {
-            this.$bvModal.msgBoxConfirm('Desea eliminar este contacto?')
-                .then(value => {
-                    if (value == true) {
-                        this.axios
-                            .delete('http://localhost:8000/api/contact/delete/'+row.item.id)
-                            .then(response => {
-                                this.items.splice(row.index, 1);
-                            });
-                    }
-                })
-                .catch(err => {
-                // An error occurred
-                })
-        },
+              this.items.splice(row.index, 1)
+            })
+        }
+      }).catch(err => {
+        console.error(err)
+      })
     }
-  };
+  }
+}
 </script>
